@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulador de ganhos — Arte em Escala</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;0,900;1,600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --ink: #262322;
+    --ink-soft: #55504c;
+    --paper: #fefdf9;
+    --paper-alt: #f7f2ea;
+    --blush-deep: #d99aa8;
+    --line: #e2ddd3;
+
+    --serif: "Playfair Display", Georgia, "Times New Roman", serif;
+    --sans: "Inter", "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  html { background: transparent; -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    font-family: var(--sans);
+    color: var(--ink);
+    background: transparent;
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  p { margin: 0 0 1em; }
+
+  .sim-wrap { max-width: 900px; margin: 0 auto; padding: clamp(10px, 3vw, 24px); }
+
+  .sim-widget {
+    background: var(--paper);
+    border: 2px solid var(--ink);
+    border-radius: 14px;
+    padding: clamp(14px, 4vw, 32px);
+  }
+
+  .sim-setup-value { display: block; font-size: 0.9rem; color: var(--ink-soft); margin-bottom: 1.1rem; }
+
+  .sim-table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+  .sim-table th {
+    text-align: left;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--ink-soft);
+    padding: 0 0.5rem 0.6rem;
+    border-bottom: 2px solid var(--ink);
+  }
+  .sim-table th.r, .sim-table td.r { text-align: right; }
+  .sim-table td {
+    padding: 0.6rem 0.5rem;
+    border-bottom: 1px solid var(--line);
+    font-variant-numeric: tabular-nums;
+  }
+  .sim-table td.comm { font-weight: 700; }
+  .sim-table td.comm small { display: block; font-weight: 500; font-size: 0.75rem; color: var(--ink-soft); }
+  .sim-table tr.extra { display: none; }
+  .sim-table.open tr.extra { display: table-row; }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5em;
+    width: 100%;
+    font-family: var(--sans);
+    font-weight: 700;
+    font-size: 0.9rem;
+    padding: 0.6em 1.2em;
+    min-height: 46px;
+    border-radius: 999px;
+    border: 2px solid var(--ink);
+    cursor: pointer;
+    background: var(--paper);
+    color: var(--ink);
+    transition: transform 0.15s ease, background 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--blush-deep); }
+  .btn:hover { transform: translateY(-2px); background: var(--paper-alt); }
+  .btn:active { transform: scale(0.98); background: var(--paper-alt); }
+  .btn:focus-visible { outline: 3px solid var(--blush-deep); outline-offset: 2px; }
+
+  .btn-toggle { margin-top: 0.9rem; min-height: 42px; font-size: 0.85rem; background: var(--paper-alt); }
+
+  .sim-totals { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.8rem; margin: 1.4rem 0; }
+  .sim-total-card {
+    background: var(--paper-alt);
+    border: 1.5px solid var(--ink);
+    border-radius: 10px;
+    padding: 0.9rem 1rem;
+  }
+  .sim-total-card .value {
+    display: block;
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: 1.4rem;
+    line-height: 1.2;
+    margin-bottom: 0.2em;
+    overflow-wrap: anywhere;
+  }
+  .sim-total-card .label { font-size: 0.8rem; color: var(--ink-soft); }
+
+  .sim-footnote { font-size: 0.78rem; color: var(--ink-soft); margin: 1.1rem 0 0; }
+
+  @media (min-width: 600px) {
+    .btn { width: auto; }
+    .sim-total-card .value { font-size: 1.6rem; }
+  }
+  @media (max-width: 599px) {
+    .sim-setup-value { font-size: 0.78rem; margin-bottom: 0.9rem; }
+    .sim-table { font-size: 0.82rem; }
+    .sim-table th { font-size: 0.64rem; padding: 0 0.35rem 0.5rem; }
+    .sim-table td { padding: 0.45rem 0.35rem; }
+    .sim-table td.comm small { font-size: 0.68rem; }
+    .btn { font-size: 0.8rem; min-height: 42px; }
+    .btn-toggle { font-size: 0.78rem; min-height: 38px; }
+    .sim-total-card { padding: 0.7rem 0.8rem; }
+    .sim-total-card .value { font-size: 1.1rem; }
+    .sim-total-card .label { font-size: 0.72rem; }
+    .sim-footnote { font-size: 0.7rem; }
+  }
+  @media (max-width: 380px) { .sim-totals { grid-template-columns: 1fr; } }
+  @media (prefers-reduced-motion: reduce) { .btn { transition: none; } }
+</style>
+</head>
+<body>
+
+<div class="sim-wrap">
+  <div class="sim-widget" id="sim-widget">
+    <span class="sim-setup-value">Exemplo: 5 artes submetidas · Simulação de 10 vendas no mês</span>
+
+    <table class="sim-table" id="sim-table">
+      <thead>
+        <tr><th>Papel de parede</th><th class="r">Valor da venda</th><th class="r">Sua comissão</th></tr>
+      </thead>
+      <tbody id="sim-tbody"></tbody>
+    </table>
+
+    <button class="btn btn-toggle" id="sim-toggle" type="button" aria-expanded="false">Ver as outras 5 vendas</button>
+
+    <div class="sim-totals">
+      <div class="sim-total-card">
+        <span class="value" id="sim-month-total">R$ 0</span>
+        <span class="label">recebido neste mês, no exemplo</span>
+      </div>
+      <div class="sim-total-card">
+        <span class="value" id="sim-12m-total">R$ 0</span>
+        <span class="label">em 12 meses, no mesmo ritmo</span>
+      </div>
+    </div>
+
+    <button class="btn" id="sim-reroll" type="button">Sortear outro exemplo</button>
+
+    <p class="sim-footnote">Valores meramente ilustrativos e simplificados, sem garantia de resultado. Esta simulação não representa compromisso da CaBitt Artes com expectativas de ganho.</p>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var ARTS = 5;          // artes submetidas
+  var SALES = 10;        // vendas simuladas no mês
+  var VISIBLE = 5;       // linhas visíveis antes de "ver as outras"
+  var MAX_PER_ART = 3;   // máximo de vendas por arte, para não ficar irreal
+  var MIN_SALE = 1000;   // nenhum papel de parede vale menos que isso
+  var MAX_SALE = 3000;
+
+  var table = document.getElementById("sim-table");
+  var tbody = document.getElementById("sim-tbody");
+  var reroll = document.getElementById("sim-reroll");
+  var toggle = document.getElementById("sim-toggle");
+  var monthEl = document.getElementById("sim-month-total");
+  var twelveEl = document.getElementById("sim-12m-total");
+
+  function rand(min, max) { return Math.random() * (max - min) + min; }
+  function brl(v) {
+    return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+  }
+  function shuffle(a) {
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+
+  // Cada arte vende pelo menos 1 vez; as vendas restantes são sorteadas (máx. 3 por arte)
+  function pickArts() {
+    var counts = [], list = [], i;
+    for (i = 0; i < ARTS; i++) { counts.push(1); }
+    var left = SALES - ARTS;
+    while (left > 0) {
+      var k = Math.floor(Math.random() * ARTS);
+      if (counts[k] < MAX_PER_ART) { counts[k]++; left--; }
+    }
+    for (i = 0; i < ARTS; i++) {
+      for (var n = 0; n < counts[i]; n++) { list.push(i + 1); }
+    }
+    return shuffle(list);
+  }
+
+  function render() {
+    var arts = pickArts();
+    var monthTotal = 0;
+    var rows = "";
+    for (var i = 0; i < SALES; i++) {
+      var saleValue = rand(MIN_SALE, MAX_SALE);
+      var commission = Math.round(rand(5, 15));
+      var royalty = saleValue * (commission / 100);
+      monthTotal += royalty;
+      rows +=
+        "<tr" + (i >= VISIBLE ? " class=\"extra\"" : "") + ">" +
+        "<td>Tema 0" + arts[i] + "</td>" +
+        "<td class=\"r\">" + brl(saleValue) + "</td>" +
+        "<td class=\"r comm\">" + brl(royalty) + "<small>" + commission + "%</small></td>" +
+        "</tr>";
+    }
+    tbody.innerHTML = rows;
+    monthEl.textContent = brl(monthTotal);
+    twelveEl.textContent = brl(monthTotal * 12);
+  }
+
+  function setToggle() {
+    var open = table.classList.contains("open");
+    toggle.textContent = open ? "Ocultar as outras 5 vendas" : "Ver as outras 5 vendas";
+    toggle.setAttribute("aria-expanded", open ? "true" : "false");
+  }
+
+  render();
+  reroll.addEventListener("click", render);
+  toggle.addEventListener("click", function () {
+    table.classList.toggle("open");
+    setToggle();
+  });
+})();
+</script>
+
+</body>
+</html>
